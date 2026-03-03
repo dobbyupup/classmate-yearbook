@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>同学录</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --card-bg: #141414;
+  --card-bg2: #1a1a1a;
+  --text: #f0f0f0;
+  --text-sec: #888;
+  --accent: #fff;
+  --border: rgba(255,255,255,0.08);
+  --glass: rgba(255,255,255,0.04);
+  --glass2: rgba(255,255,255,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --safe-top: env(safe-area-inset-top, 20px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body {
+  width:100%; height:100%;
+  font-family:'Noto Sans SC','PingFang SC','Helvetica Neue',sans-serif;
+  background:var(--bg); color:var(--text);
+  overflow:hidden; font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+
+.app { width:100%; height:100%; position:relative; overflow:hidden; }
+.screens { display:flex; flex-direction:column; height:calc(100% - 60px); overflow:hidden; }
+.screen { width:100%; height:100%; flex-shrink:0; overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; display:none; }
+.screen.active { display:block; }
+.screen::-webkit-scrollbar { display:none; }
+.screen { scrollbar-width:none; }
+
+/* ===== 底部导航 ===== */
+.tab-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:1000;
+  display:flex; align-items:center; justify-content:space-around;
+  height:60px; padding-bottom:var(--safe-bottom);
+  background:rgba(10,10,10,0.92); backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.tab-item {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer; padding:6px 16px; transition:all .2s;
+  color:var(--text-sec); font-size:10px; font-weight:500;
+}
+.tab-item.active { color:var(--accent); }
+.tab-item svg { width:22px; height:22px; transition:all .2s; }
+.tab-item.active svg { transform:scale(1.1); }
+
+/* ===== 顶部栏 ===== */
+.top-bar {
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 20px; padding-top:calc(var(--safe-top) + 8px);
+  background:rgba(10,10,10,0.85); backdrop-filter:blur(20px);
+}
+.top-title { font-size:18px; font-weight:700; letter-spacing:1px; }
+.top-bar-left { display:flex; align-items:center; gap:10px; }
+.top-bar-right { display:flex; align-items:center; gap:8px; }
+.top-btn {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--glass2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s; border:none; color:var(--text);
+}
+.top-btn:active { transform:scale(0.9); background:var(--glass); }
+.top-btn svg { width:18px; height:18px; }
+
+/* ========================================
+   第一屏：3D 悬浮卡片墙
+   ======================================== */
+.home-screen { position:relative; background:#050505; }
+
+.scene-3d {
+  position:relative; width:100%; height:100vh;
+  perspective:1200px; perspective-origin:50% 50%;
+  overflow:hidden;
+}
+.scene-3d::before {
+  content:''; position:absolute; top:0; left:0; right:0; bottom:0; z-index:2;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 30%, rgba(255,255,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 50% at 30% 60%, rgba(255,255,255,0.03) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+.volumetric-light {
+  position:absolute; top:-20%; left:20%; width:60%; height:80%;
+  background:radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%);
+  z-index:1; pointer-events:none; animation:lightPulse 8s ease-in-out infinite;
+}
+@keyframes lightPulse {
+  0%,100% { opacity:0.6; transform:scale(1); }
+  50% { opacity:1; transform:scale(1.1); }
+}
+
+.bokeh { position:absolute; border-radius:50%; pointer-events:none; z-index:3; }
+
+.cards-3d {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  transform-style:preserve-3d; z-index:5;
+}
+
+.photo-card {
+  position:absolute; width:100px; height:130px;
+  background:#fff; border-radius:6px; padding:6px 6px 20px 6px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+  cursor:pointer; transition:transform .4s cubic-bezier(.25,.8,.25,1), box-shadow .4s;
+  transform-style:preserve-3d; will-change:transform;
+}
+.photo-card::after {
+  content:''; position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  width:60%; height:4px; border-radius:2px; background:rgba(0,0,0,0.06);
+}
+.photo-card img {
+  width:100%; height:calc(100% - 14px); object-fit:cover; border-radius:3px;
+  display:block; background:#e0e0e0;
+}
+.photo-card .card-name {
+  position:absolute; bottom:4px; left:0; right:0;
+  text-align:center; font-size:7px; color:#555; font-weight:500;
+  letter-spacing:0.5px;
+}
+.photo-card:active {
+  transform:scale(1.15) translateZ(60px) !important;
+  box-shadow:0 20px 60px rgba(0,0,0,0.8);
+}
+
+.depth-near { filter:blur(0px); z-index:10; }
+.depth-mid { filter:blur(0.5px); z-index:5; opacity:0.9; }
+.depth-far { filter:blur(2px); z-index:1; opacity:0.6; }
+
+@keyframes float1 { 0%,100% { transform:translateY(0) rotateY(var(--ry)) rotateX(var(--rx)); } 50% { transform:translateY(-15px) rotateY(calc(var(--ry) + 3deg)) rotateX(calc(var(--rx) - 2deg)); } }
+@keyframes float2 { 0%,100% { transform:translateY(0) rotateY(var(--ry)) rotateX(var(--rx)); } 50% { transform:translateY(-20px) rotateY(calc(var(--ry) - 4deg)) rotateX(calc(var(--rx) + 3deg)); } }
+@keyframes float3 { 0%,100% { transform:translateY(0) rotateY(var(--ry)) rotateX(var(--rx)); } 50% { transform:translateY(-10px) rotateY(calc(var(--ry) + 2deg)) rotateX(calc(var(--rx) - 1deg)); } }
+
+.home-hero {
+  position:absolute; bottom:100px; left:0; right:0; z-index:20;
+  text-align:center; padding:0 30px;
+}
+.home-hero h1 {
+  font-size:28px; font-weight:900; letter-spacing:4px;
+  background:linear-gradient(180deg, #fff 40%, rgba(255,255,255,0.4));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.home-hero p { font-size:12px; color:var(--text-sec); letter-spacing:2px; font-weight:300; }
+
+/* 复旦校徽按钮 */
+.badge-btn {
+  position:absolute; top:calc(var(--safe-top) + 12px); right:20px; z-index:50;
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(255,255,255,0.08); backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,255,255,0.2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .3s; overflow:hidden;
+}
+.badge-btn:active { transform:scale(0.9); }
+.badge-btn img { width:36px; height:36px; border-radius:50%; }
+.badge-btn .fudan-badge {
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+}
+
+/* ========================================
+   第二屏：留言墙
+   ======================================== */
+.msg-screen { background:var(--bg); }
+
+.msg-top-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px;
+}
+
+/* 排序折叠 */
+.sort-toggle {
+  position:relative; display:flex; align-items:center; gap:6px;
+  cursor:pointer; padding:6px 12px; border-radius:8px;
+  background:var(--glass2); border:1px solid var(--border);
+  color:var(--text-sec); font-size:12px; transition:all .2s;
+}
+.sort-toggle:active { transform:scale(0.95); }
+.sort-toggle svg { width:14px; height:14px; transition:transform .3s; }
+.sort-toggle.open svg { transform:rotate(180deg); }
+.sort-dropdown {
+  position:absolute; top:calc(100% + 6px); left:0; z-index:50;
+  background:rgba(20,20,20,0.98); backdrop-filter:blur(20px);
+  border:1px solid var(--border); border-radius:var(--radius-sm);
+  overflow:hidden; min-width:120px;
+  opacity:0; transform:translateY(-8px); pointer-events:none;
+  transition:all .2s;
+}
+.sort-dropdown.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.sort-option {
+  padding:10px 16px; font-size:12px; color:var(--text-sec);
+  cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:8px;
+}
+.sort-option:hover, .sort-option:active { background:var(--glass2); color:#fff; }
+.sort-option.active { color:#fff; }
+.sort-option.active::before {
+  content:''; width:4px; height:4px; border-radius:50%; background:#fff;
+}
+
+.msg-tabs {
+  display:flex; gap:0; flex:1; margin-left:12px;
+}
+.msg-tab {
+  flex:1; text-align:center; padding:10px 0; font-size:13px;
+  color:var(--text-sec); cursor:pointer; position:relative;
+  font-weight:500; transition:color .2s;
+}
+.msg-tab.active { color:var(--accent); }
+.msg-tab.active::after {
+  content:''; position:absolute; bottom:0; left:30%; right:30%;
+  height:2px; background:#fff; border-radius:1px;
+}
+
+.msg-top-divider {
+  height:1px; background:var(--border); margin:0 20px 14px;
+}
+
+/* 瀑布流 */
+.msg-masonry {
+  padding:0 12px 100px;
+  column-count:2; column-gap:10px;
+}
+.msg-card {
+  break-inside:avoid; margin-bottom:10px;
+  position:relative; border-radius:var(--radius-sm); overflow:hidden;
+  cursor:pointer; transition:transform .2s;
+  display:inline-block; width:100%;
+}
+.msg-card:active { transform:scale(0.97); }
+.msg-card-bg {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  background-size:cover; background-position:center;
+}
+.msg-card-bg::after {
+  content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+  background:linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.65) 100%);
+}
+.msg-card-plain { background:var(--card-bg); border:1px solid var(--border); }
+.msg-card-content {
+  position:relative; z-index:1; padding:14px;
+  display:flex; flex-direction:column;
+}
+.msg-card-header {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+}
+.msg-avatar {
+  width:28px; height:28px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.2);
+  overflow:hidden; flex-shrink:0;
+}
+.msg-avatar img { width:100%; height:100%; object-fit:cover; }
+.msg-user-info { display:flex; flex-direction:column; }
+.msg-username { font-size:11px; font-weight:600; }
+.msg-time { font-size:9px; color:rgba(255,255,255,0.4); }
+.msg-text { font-size:12px; line-height:1.65; color:rgba(255,255,255,0.9); font-weight:300; }
+
+.msg-voice {
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,0.1); border-radius:16px;
+  padding:6px 12px; width:fit-content;
+}
+.voice-icon { width:16px; height:16px; color:#fff; }
+.voice-wave { display:flex; align-items:center; gap:2px; height:16px; }
+.voice-wave span {
+  width:2px; border-radius:1px; background:rgba(255,255,255,0.6);
+  animation:waveAnim 1.2s ease-in-out infinite;
+}
+.voice-wave span:nth-child(1) { height:5px; animation-delay:0s; }
+.voice-wave span:nth-child(2) { height:10px; animation-delay:0.1s; }
+.voice-wave span:nth-child(3) { height:7px; animation-delay:0.2s; }
+.voice-wave span:nth-child(4) { height:13px; animation-delay:0.3s; }
+.voice-wave span:nth-child(5) { height:8px; animation-delay:0.4s; }
+.voice-wave span:nth-child(6) { height:5px; animation-delay:0.5s; }
+.voice-dur { font-size:10px; color:rgba(255,255,255,0.4); }
+@keyframes waveAnim {
+  0%,100% { transform:scaleY(1); }
+  50% { transform:scaleY(0.4); }
+}
+
+.msg-card-footer {
+  display:flex; align-items:center; gap:12px; margin-top:10px;
+}
+.msg-action {
+  display:flex; align-items:center; gap:3px;
+  font-size:10px; color:rgba(255,255,255,0.35);
+}
+.msg-action svg { width:12px; height:12px; }
+
+.fab-write {
+  position:fixed; bottom:80px; right:20px; z-index:100;
+  width:52px; height:52px; border-radius:50%;
+  background:#fff; color:#000;
+  display:none; align-items:center; justify-content:center;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  cursor:pointer; border:none; transition:all .2s;
+}
+.fab-write.show { display:flex; }
+.fab-write:active { transform:scale(0.9); }
+.fab-write svg { width:22px; height:22px; }
+
+/* ========================================
+   第三屏：时间轴
+   ======================================== */
+.timeline-screen { background:var(--bg); }
+.timeline-wrap { padding:0 20px 100px; position:relative; }
+.timeline-line {
+  position:absolute; left:36px; top:0; bottom:0;
+  width:1px; background:linear-gradient(180deg, transparent, var(--border) 5%, var(--border) 95%, transparent);
+}
+.timeline-item { position:relative; padding-left:50px; margin-bottom:30px; }
+.timeline-dot {
+  position:absolute; left:30px; top:6px;
+  width:13px; height:13px; border-radius:50%;
+  background:var(--bg); border:2px solid rgba(255,255,255,0.3); z-index:1;
+}
+.timeline-item.highlight .timeline-dot {
+  border-color:#fff; background:#fff;
+  box-shadow:0 0 12px rgba(255,255,255,0.3);
+}
+.timeline-date { font-size:11px; color:var(--text-sec); margin-bottom:6px; font-weight:500; }
+.timeline-card {
+  background:var(--card-bg); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px; transition:all .2s;
+}
+.timeline-card:active { transform:scale(0.98); }
+.timeline-card h4 { font-size:14px; font-weight:600; margin-bottom:6px; }
+.timeline-card p { font-size:12px; color:var(--text-sec); line-height:1.6; }
+.timeline-card .tl-photo {
+  width:100%; height:160px; border-radius:var(--radius-sm);
+  background:var(--card-bg2); margin-top:10px; overflow:hidden;
+}
+.timeline-card .tl-photo img {
+  width:100%; height:100%; object-fit:cover;
+  background:#1a1a1a;
+}
+.timeline-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.timeline-tag {
+  font-size:10px; padding:3px 10px; border-radius:20px;
+  background:var(--glass2); color:var(--text-sec);
+}
+.timeline-friends { display:flex; align-items:center; gap:4px; margin-top:10px; }
+.timeline-friends span { font-size:10px; color:var(--text-sec); }
+.tl-friend-av {
+  width:20px; height:20px; border-radius:50%;
+  background:linear-gradient(135deg,#333,#555);
+  border:1px solid var(--border); margin-left:-6px;
+  overflow:hidden;
+}
+.tl-friend-av:first-child { margin-left:0; }
+.tl-friend-av img { width:100%; height:100%; object-fit:cover; }
+
+.alumni-btn {
+  display:flex; align-items:center; gap:6px;
+  background:var(--glass2); border-radius:20px;
+  padding:6px 14px; border:1px solid var(--border);
+  color:var(--text); font-size:12px; cursor:pointer; transition:all .2s;
+}
+.alumni-btn:active { transform:scale(0.95); }
+.alumni-btn svg { width:14px; height:14px; }
+
+.alumni-panel {
+  position:fixed; top:0; right:-100%; width:85%; max-width:360px; height:100%;
+  background:rgba(15,15,15,0.98); backdrop-filter:blur(30px);
+  z-index:2000; transition:right .4s cubic-bezier(.25,.8,.25,1);
+  padding:60px 24px 30px; overflow-y:auto;
+  border-left:1px solid var(--border);
+}
+.alumni-panel.show { right:0; }
+.search-box {
+  display:flex; align-items:center; gap:10px;
+  background:var(--glass2); border-radius:var(--radius-sm);
+  padding:10px 14px; margin-bottom:20px;
+  border:1px solid var(--border);
+}
+.search-box svg { width:16px; height:16px; color:var(--text-sec); flex-shrink:0; }
+.search-box input {
+  flex:1; background:none; border:none; outline:none;
+  color:var(--text); font-size:13px; font-family:inherit;
+}
+.search-box input::placeholder { color:var(--text-sec); }
+.relation-graph {
+  width:100%; height:200px; border-radius:var(--radius);
+  background:var(--card-bg); border:1px solid var(--border);
+  margin-bottom:20px; position:relative; overflow:hidden;
+}
+.relation-graph canvas { width:100%; height:100%; }
+.alumni-list { display:flex; flex-direction:column; gap:12px; }
+.alumni-item {
+  display:flex; align-items:center; gap:12px; padding:12px;
+  background:var(--card-bg); border-radius:var(--radius-sm);
+  border:1px solid var(--border); cursor:pointer;
+}
+.alumni-item:active { background:var(--glass2); }
+.alumni-av {
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg,#333,#555);
+  flex-shrink:0; overflow:hidden;
+}
+.alumni-av img { width:100%; height:100%; object-fit:cover; }
+.alumni-info { flex:1; }
+.alumni-name { font-size:13px; font-weight:600; }
+.alumni-dept { font-size:11px; color:var(--text-sec); }
+.alumni-relation {
+  font-size:10px; padding:2px 8px; border-radius:10px;
+  background:var(--glass2); color:var(--text-sec);
+}
+
+/* ========================================
+   第四屏：个人中心
+   ======================================== */
+.profile-screen { background:var(--bg); }
+.profile-wrap { padding:0 20px 120px; }
+.profile-header { text-align:center; padding:20px 0 24px; }
+.profile-avatar {
+  width:80px; height:80px; border-radius:50%; margin:0 auto 14px;
+  background:linear-gradient(135deg, #222, #444);
+  border:2px solid rgba(255,255,255,0.1);
+  position:relative; overflow:hidden;
+}
+.profile-avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-name { font-size:18px; font-weight:700; margin-bottom:4px; }
+.profile-dept { font-size:12px; color:var(--text-sec); margin-bottom:10px; }
+.profile-bio {
+  font-size:12px; color:var(--text-sec); line-height:1.6;
+  max-width:260px; margin:0 auto; font-weight:300;
+}
+.profile-actions { display:flex; gap:12px; margin:20px 0; }
+.profile-btn {
+  flex:1; padding:12px; border-radius:var(--radius-sm);
+  text-align:center; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all .2s; border:none; font-family:inherit;
+}
+.profile-btn:active { transform:scale(0.97); }
+.profile-btn.primary { background:#fff; color:#000; }
+.profile-btn.secondary { background:var(--card-bg); color:var(--text); border:1px solid var(--border); }
+
+.section-title {
+  font-size:15px; font-weight:700; margin:24px 0 12px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title svg { width:16px; height:16px; color:var(--text-sec); }
+
+.tags-wrap { display:flex; flex-wrap:wrap; gap:8px; }
+.tag-item {
+  padding:6px 14px; border-radius:20px; font-size:12px;
+  background:var(--glass2); color:var(--text-sec); border:1px solid var(--border);
+}
+.tag-item.highlight { background:rgba(255,255,255,0.12); color:#fff; }
+
+.honor-list { display:flex; flex-direction:column; gap:10px; }
+.honor-item {
+  display:flex; align-items:center; gap:12px; padding:14px;
+  background:var(--card-bg); border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+}
+.honor-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.honor-icon svg { width:18px; height:18px; }
+.honor-info { flex:1; }
+.honor-title { font-size:13px; font-weight:600; margin-bottom:2px; }
+.honor-sub { font-size:11px; color:var(--text-sec); }
+
+.mailbox-card {
+  background:var(--card-bg); border-radius:var(--radius);
+  border:1px solid var(--border); padding:20px; position:relative; overflow:hidden;
+}
+.mailbox-card::before {
+  content:''; position:absolute; top:-30px; right:-30px;
+  width:100px; height:100px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.04), transparent);
+}
+.mailbox-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+}
+.mailbox-header h4 { font-size:14px; font-weight:600; }
+.mailbox-status {
+  font-size:10px; padding:3px 10px; border-radius:10px;
+  background:var(--glass2); color:var(--text-sec);
+}
+.mailbox-info { font-size:12px; color:var(--text-sec); line-height:1.6; margin-bottom:14px; }
+.mailbox-btn {
+  width:100%; padding:10px; border-radius:var(--radius-sm);
+  background:var(--glass2); border:1px solid var(--border);
+  color:var(--text); font-size:12px; font-weight:500;
+  cursor:pointer; transition:all .2s; font-family:inherit;
+}
+.mailbox-btn:active { transform:scale(0.98); }
+
+/* 校友来信 */
+.alumni-letters { display:flex; flex-direction:column; gap:12px; margin-top:14px; margin-bottom:14px; }
+.alumni-letter {
+  background:var(--glass2); border:1px solid var(--border);
+  border-radius:var(--radius-sm); padding:14px; position:relative;
+}
+.alumni-letter::before {
+  content:'\201C'; position:absolute; top:6px; left:10px;
+  font-size:28px; color:rgba(255,255,255,0.08); font-family:Georgia,serif; line-height:1;
+}
+.alumni-letter-header {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+}
+.alumni-letter-av {
+  width:24px; height:24px; border-radius:50%; overflow:hidden; flex-shrink:0;
+  border:1px solid rgba(255,255,255,0.15);
+}
+.alumni-letter-av img { width:100%; height:100%; object-fit:cover; }
+.alumni-letter-name { font-size:11px; font-weight:600; }
+.alumni-letter-year { font-size:10px; color:var(--text-sec); margin-left:auto; }
+.alumni-letter-text {
+  font-size:12px; color:rgba(255,255,255,0.7); line-height:1.65;
+  font-weight:300; font-style:italic; padding-left:4px;
+}
+.alumni-letter-open {
+  font-size:10px; color:var(--text-sec); margin-top:8px;
+  display:flex; align-items:center; gap:4px;
+}
+.alumni-letter-open svg { width:12px; height:12px; }
+
+.track-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.track-card {
+  background:var(--card-bg); border-radius:var(--radius-sm);
+  border:1px solid var(--border); padding:16px; text-align:center;
+}
+.track-value { font-size:24px; font-weight:900; margin-bottom:4px; letter-spacing:-1px; }
+.track-label { font-size:11px; color:var(--text-sec); }
+.track-card.wide { grid-column:1/-1; }
+
+.skill-list { display:flex; flex-direction:column; gap:10px; }
+.skill-item { display:flex; align-items:center; gap:12px; }
+.skill-name { font-size:12px; width:70px; text-align:right; color:var(--text-sec); flex-shrink:0; }
+.skill-bar-wrap { flex:1; height:6px; background:var(--glass2); border-radius:3px; overflow:hidden; }
+.skill-bar {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.7));
+  transition:width .8s cubic-bezier(.25,.8,.25,1);
+}
+
+/* 面板相关 */
+.badge-panel {
+  position:fixed; top:0; right:-100%; width:85%; max-width:360px; height:100%;
+  background:rgba(15,15,15,0.98); backdrop-filter:blur(30px);
+  z-index:2000; transition:right .4s cubic-bezier(.25,.8,.25,1);
+  padding:60px 24px 30px; border-left:1px solid var(--border);
+  overflow-y:auto;
+}
+.badge-panel.show { right:0; }
+.badge-menu-item {
+  display:flex; align-items:center; gap:14px; padding:16px 0;
+  border-bottom:1px solid var(--border); cursor:pointer; transition:all .2s;
+}
+.badge-menu-item:active { padding-left:8px; }
+.badge-menu-icon {
+  width:40px; height:40px; border-radius:12px;
+  background:var(--glass2); display:flex; align-items:center; justify-content:center;
+}
+.badge-menu-icon svg { width:18px; height:18px; }
+.badge-menu-text h4 { font-size:14px; font-weight:600; margin-bottom:2px; }
+.badge-menu-text p { font-size:11px; color:var(--text-sec); }
+
+.settings-panel {
+  position:fixed; top:0; right:-100%; width:85%; max-width:360px; height:100%;
+  background:rgba(15,15,15,0.98); backdrop-filter:blur(30px);
+  z-index:2000; transition:right .4s cubic-bezier(.25,.8,.25,1);
+  padding:60px 24px 30px; overflow-y:auto; border-left:1px solid var(--border);
+}
+.settings-panel.show { right:0; }
+.settings-section { margin-bottom:24px; }
+.settings-section h4 {
+  font-size:13px; font-weight:600; margin-bottom:12px;
+  color:var(--text-sec); letter-spacing:1px;
+}
+.privacy-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-bottom:1px solid var(--border);
+}
+.privacy-label { font-size:13px; }
+.privacy-select {
+  background:var(--glass2); border:1px solid var(--border);
+  border-radius:8px; padding:6px 10px; color:var(--text);
+  font-size:11px; outline:none; font-family:inherit; -webkit-appearance:none;
+}
+
+.panel-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.5); z-index:1999;
+  opacity:0; pointer-events:none; transition:opacity .3s;
+}
+.panel-overlay.show { opacity:1; pointer-events:auto; }
+
+.close-panel-btn {
+  position:absolute; top:20px; right:20px;
+  width:32px; height:32px; border-radius:50%;
+  background:var(--glass2); border:none; color:#fff;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+
+.fade-up {
+  opacity:0; transform:translateY(20px);
+  animation:fadeUp .6s ease forwards;
+}
+@keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+.stagger-1 { animation-delay:.1s; }
+.stagger-2 { animation-delay:.2s; }
+.stagger-3 { animation-delay:.3s; }
+.stagger-4 { animation-delay:.4s; }
+.stagger-5 { animation-delay:.5s; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="screens">
+
+    <!-- ==================== 第一屏：首页 ==================== -->
+    <div class="screen active" id="screen-home">
+      <div class="home-screen">
+        <!-- 复旦校徽 -->
+        <div class="badge-btn" onclick="toggleBadgePanel()">
+          <div class="fudan-badge">
+            <svg viewBox="0 0 100 100" width="36" height="36">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+              <text x="50" y="40" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="18" font-weight="700" font-family="STKaiti,KaiTi,serif">复旦</text>
+              <text x="50" y="58" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-weight="400" font-family="STKaiti,KaiTi,serif">大学</text>
+              <text x="50" y="73" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7" font-family="sans-serif" letter-spacing="1">FUDAN</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="volumetric-light"></div>
+
+        <div class="scene-3d" id="scene3d">
+          <div class="cards-3d" id="cards3d"></div>
+        </div>
+
+        <div class="home-hero">
+          <h1>同 学 录</h1>
+          <p>那些年 · 我们一起走过</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 第二屏：留言墙 ==================== -->
+    <div class="screen" id="screen-msg">
+      <div class="top-bar">
+        <div class="top-title">留言墙</div>
+      </div>
+
+      <div class="msg-top-row">
+        <div class="sort-toggle" id="sortToggle" onclick="toggleSort()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M3 12h12M3 18h6"/>
+          </svg>
+          <span id="sortLabel">最新</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <div class="sort-dropdown" id="sortDropdown">
+            <div class="sort-option active" data-sort="latest" onclick="setSort('latest',event)">最新发布</div>
+            <div class="sort-option" data-sort="hot" onclick="setSort('hot',event)">最热门</div>
+          </div>
+        </div>
+        <div class="msg-tabs">
+          <div class="msg-tab active" data-cat="all">校园</div>
+          <div class="msg-tab" data-cat="dept">院系</div>
+          <div class="msg-tab" data-cat="class">班级</div>
+          <div class="msg-tab" data-cat="personal">个人</div>
+        </div>
+      </div>
+      <div class="msg-top-divider"></div>
+
+      <div class="msg-masonry" id="msgList"></div>
+
+      <button class="fab-write show" onclick="alert('撰写新留言')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ==================== 第三屏：时间轴 ==================== -->
+    <div class="screen" id="screen-timeline">
+      <div class="top-bar">
+        <div class="top-title">时间轴</div>
+        <div class="alumni-btn" onclick="toggleAlumniPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          <span>校友</span>
+        </div>
+      </div>
+      <div class="timeline-wrap" id="timelineWrap">
+        <div class="timeline-line"></div>
+      </div>
+    </div>
+
+    <!-- ==================== 第四屏：个人 ==================== -->
+    <div class="screen" id="screen-profile">
+      <div class="top-bar">
+        <div class="top-title">我的</div>
+        <button class="top-btn" onclick="toggleSettingsPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="profile-wrap" id="profileWrap"></div>
+    </div>
+  </div>
+
+  <!-- ===== 底部导航 ===== -->
+  <div class="tab-bar">
+    <div class="tab-item active" data-screen="screen-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="tab-item" data-screen="screen-msg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>留言</span>
+    </div>
+    <div class="tab-item" data-screen="screen-timeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>时光</span>
+    </div>
+    <div class="tab-item" data-screen="screen-profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </div>
+  </div>
+
+  <!-- 校徽侧边面板 -->
+  <div class="panel-overlay" id="badgeOverlay" onclick="toggleBadgePanel()"></div>
+  <div class="badge-panel" id="badgePanel">
+    <button class="close-panel-btn" onclick="toggleBadgePanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+      <svg viewBox="0 0 100 100" width="40" height="40">
+        <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+        <text x="50" y="40" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="18" font-weight="700" font-family="STKaiti,KaiTi,serif">复旦</text>
+        <text x="50" y="58" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="STKaiti,KaiTi,serif">大学</text>
+        <text x="50" y="73" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="7" font-family="sans-serif" letter-spacing="1">FUDAN</text>
+      </svg>
+      <div>
+        <h3 style="font-size:18px;font-weight:700;">复旦大学</h3>
+        <p style="font-size:11px;color:var(--text-sec);">校园动态中心</p>
+      </div>
+    </div>
+    <div class="badge-menu-item">
+      <div class="badge-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V9a2 2 0 012-2h2a2 2 0 012 2v9a2 2 0 01-2 2h-2z"/></svg></div>
+      <div class="badge-menu-text"><h4>学校最新动态</h4><p>校园新闻、活动公告、重大事件</p></div>
+    </div>
+    <div class="badge-menu-item">
+      <div class="badge-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <div class="badge-menu-text"><h4>校友动态</h4><p>校友圈子、近况更新、聚会信息</p></div>
+    </div>
+    <div class="badge-menu-item">
+      <div class="badge-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+      <div class="badge-menu-text"><h4>校园招聘</h4><p>名企招聘、校招信息、实习机会</p></div>
+    </div>
+    <div class="badge-menu-item">
+      <div class="badge-menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <div class="badge-menu-text"><h4>就业创业政策扶持</h4><p>创业补贴、就业指导、政策解读</p></div>
+    </div>
+  </div>
+
+  <!-- 校友侧边面板 -->
+  <div class="panel-overlay" id="alumniOverlay" onclick="toggleAlumniPanel()"></div>
+  <div class="alumni-panel" id="alumniPanel">
+    <button class="close-panel-btn" onclick="toggleAlumniPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">校友圈</h3>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="搜索校友姓名、专业...">
+    </div>
+    <h4 style="font-size:13px;color:var(--text-sec);margin-bottom:10px;">我的关系网</h4>
+    <div class="relation-graph" id="relationGraph"><canvas id="graphCanvas"></canvas></div>
+    <h4 style="font-size:13px;color:var(--text-sec);margin-bottom:10px;">推荐校友</h4>
+    <div class="alumni-list" id="alumniList"></div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div class="panel-overlay" id="settingsOverlay" onclick="toggleSettingsPanel()"></div>
+  <div class="settings-panel" id="settingsPanel">
+    <button class="close-panel-btn" onclick="toggleSettingsPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:24px;">设置</h3>
+    <div class="settings-section">
+      <h4>隐私管理</h4>
+      <div class="privacy-item"><span class="privacy-label">个人介绍</span><select class="privacy-select"><option>全校可见</option><option>仅班级可见</option><option>仅自己可见</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">联系方式</span><select class="privacy-select"><option>全校可见</option><option selected>仅班级可见</option><option>仅自己可见</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">时间轴</span><select class="privacy-select"><option>全校可见</option><option>仅班级可见</option><option>仅自己可见</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">校园轨迹</span><select class="privacy-select"><option>全校可见</option><option>仅班级可见</option><option selected>仅自己可见</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">留言记录</span><select class="privacy-select"><option selected>全校可见</option><option>仅班级可见</option><option>仅自己可见</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">荣誉墙</span><select class="privacy-select"><option selected>全校可见</option><option>仅班级可见</option><option>仅自己可见</option></select></div>
+    </div>
+    <div class="settings-section">
+      <h4>通知设置</h4>
+      <div class="privacy-item"><span class="privacy-label">时光信箱提醒</span><select class="privacy-select"><option>微信提醒</option><option>邮件提醒</option><option selected>两者都提醒</option></select></div>
+      <div class="privacy-item"><span class="privacy-label">留言提醒</span><select class="privacy-select"><option selected>开启</option><option>关闭</option></select></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 真实学生证件照 (来自 randomuser.me 风格的 pravatar) =====
+const studentPhotos = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1557862921-37829c790f19?w=200&h=260&fit=crop&crop=face',
+];
+
+// 头像缩略图
+const avatarPhotos = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
+];
+
+// 真实大学校园场景图
+const campusPhotos = {
+  entrance: 'https://images.unsplash.com/photo-1562774053-701939374585?w=600&h=300&fit=crop',
+  library:  'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=300&fit=crop',
+  campus1:  'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&h=300&fit=crop',
+  lab:      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&h=300&fit=crop',
+  grad:     'https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=600&h=300&fit=crop',
+  dorm:     'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&h=300&fit=crop',
+  sports:   'https://images.unsplash.com/photo-1461896836934-bd45ba24e081?w=600&h=300&fit=crop',
+  cafe:     'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=300&fit=crop',
+  sunset:   'https://images.unsplash.com/photo-1504109586057-7a2ae83d1338?w=600&h=300&fit=crop',
+  meet:     'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&h=300&fit=crop',
+};
+
+// 留言背景照片
+const msgBgPhotos = [
+  'https://images.unsplash.com/photo-1504109586057-7a2ae83d1338?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=400&h=300&fit=crop',
+  'https://images.unsplash.com/photo-1461896836934-bd45ba24e081?w=400&h=300&fit=crop',
+];
+
+const classmates = [
+  { name:'林小雨', dept:'计算机科学' },
+  { name:'王子涵', dept:'软件工程' },
+  { name:'张思远', dept:'数据科学' },
+  { name:'刘星辰', dept:'人工智能' },
+  { name:'陈梦瑶', dept:'信息安全' },
+  { name:'赵天宇', dept:'网络工程' },
+  { name:'孙晓彤', dept:'电子商务' },
+  { name:'周明杰', dept:'物联网' },
+  { name:'吴悠然', dept:'数字媒体' },
+  { name:'李思琪', dept:'计算机科学' },
+  { name:'杨浩宇', dept:'软件工程' },
+  { name:'黄诗涵', dept:'人工智能' },
+  { name:'许嘉欣', dept:'数据科学' },
+  { name:'郑子豪', dept:'信息安全' },
+  { name:'马语晨', dept:'计算机科学' },
+  { name:'沈若曦', dept:'电子商务' },
+  { name:'韩逸飞', dept:'物联网' },
+  { name:'唐诗雨', dept:'数字媒体' },
+  { name:'何子墨', dept:'网络工程' },
+  { name:'方晓萱', dept:'人工智能' },
+];
+
+const messages = [
+  { user:'林小雨', uid:0, time:'3分钟前', text:'图书馆五楼的夕阳，是我整个大学最美的记忆。每次考试周都在那里奋战到闭馆，现在想想，那些日子真的好怀念。', hasPhoto:true, bgIdx:0, cat:'all', likes:24, comments:8 },
+  { user:'王子涵', uid:1, time:'15分钟前', text:null, isVoice:true, duration:'0:23', hasPhoto:false, cat:'class', likes:12, comments:3 },
+  { user:'张思远', uid:2, time:'1小时前', text:'还记得大二那次课程设计吗？我们小组通宵了三天才把项目赶出来，最后拿了全班第一。', hasPhoto:true, bgIdx:1, cat:'dept', likes:56, comments:15 },
+  { user:'刘星辰', uid:3, time:'2小时前', text:'操场上的晚风，食堂里的番茄炒蛋，还有永远挤不上的早八班车...这些平凡的日常，原来就是最珍贵的青春。', hasPhoto:true, bgIdx:2, cat:'all', likes:89, comments:23 },
+  { user:'陈梦瑶', uid:4, time:'3小时前', text:'毕业快乐！愿我们前程似锦，顶峰相见！', hasPhoto:false, cat:'personal', likes:102, comments:31 },
+  { user:'赵天宇', uid:5, time:'昨天', text:null, isVoice:true, duration:'0:45', hasPhoto:false, cat:'class', likes:18, comments:5 },
+  { user:'孙晓彤', uid:6, time:'昨天', text:'感谢四年来所有的遇见，每一段经历都让我成长。致我们终将逝去的青春，也致我们无限可能的未来。', hasPhoto:true, bgIdx:3, cat:'all', likes:67, comments:19 },
+  { user:'周明杰', uid:7, time:'昨天', text:'大学四年，最感谢的是那些深夜还在实验室陪我调bug的兄弟们。', hasPhoto:true, bgIdx:4, cat:'dept', likes:45, comments:12 },
+  { user:'吴悠然', uid:8, time:'2天前', text:'毕设答辩那天紧张到手抖，但看到导师微笑点头的那一刻，一切都值了。', hasPhoto:false, cat:'all', likes:38, comments:9 },
+  { user:'李思琪', uid:9, time:'2天前', text:'再见了，二食堂的麻辣烫和三食堂的鸡腿饭！', hasPhoto:true, bgIdx:5, cat:'personal', likes:73, comments:22 },
+  { user:'杨浩宇', uid:10, time:'3天前', text:null, isVoice:true, duration:'0:32', hasPhoto:false, cat:'class', likes:15, comments:4 },
+  { user:'黄诗涵', uid:11, time:'3天前', text:'拍毕业照那天阳光特别好，就像我们的未来一样明亮。', hasPhoto:true, bgIdx:6, cat:'all', likes:91, comments:28 },
+];
+
+const timelineData = [
+  { date:'2022年9月', title:'踏入复旦校园', desc:'带着憧憬和行李，第一次走进复旦校门。军训的汗水，是青春最初的味道。', highlight:true, hasFriends:true, tags:['入学','军训'], photo:campusPhotos.entrance },
+  { date:'2022年11月', title:'加入社团', desc:'报名了三个社团，最后留在了编程社和摄影社。认识了一帮志同道合的朋友。', highlight:false, hasFriends:true, tags:['社团','编程社'], photo:null },
+  { date:'2023年3月', title:'第一次比赛', desc:'和小组同学一起参加了全国大学生程序设计大赛，虽然只拿了三等奖，但过程比结果更有意义。', highlight:true, hasFriends:true, tags:['比赛','编程'], photo:campusPhotos.lab },
+  { date:'2023年6月', title:'大一结束', desc:'第一个学年在不知不觉中结束了，绩点还行，更重要的是收获了友谊。', highlight:false, tags:['考试周','假期'], photo:campusPhotos.library },
+  { date:'2023年9月', title:'开始专业课', desc:'正式进入专业课学习，数据结构、算法导论...每天都在和代码打交道。', highlight:false, tags:['专业课','算法'], photo:null },
+  { date:'2024年1月', title:'寒假实习', desc:'第一次走进互联网公司实习，从理论到实践的跨越，受益匪浅。', highlight:true, tags:['实习','成长'], photo:campusPhotos.cafe },
+  { date:'2024年5月', title:'获得奖学金', desc:'凭借优异成绩和项目经历，获得了国家奖学金，是对努力的最好回报。', highlight:true, tags:['奖学金','荣誉'], photo:null },
+  { date:'2024年9月', title:'大三开学', desc:'开始接触毕设方向，和导师讨论课题，一切都在向着目标前进。', highlight:false, tags:['科研','毕设'], photo:campusPhotos.campus1 },
+  { date:'2025年6月', title:'考研/求职', desc:'人生的又一个十字路口，有人选择考研深造，有人选择步入职场。不管选择哪条路，都是勇敢的。', highlight:true, hasFriends:true, tags:['考研','求职'], photo:campusPhotos.meet },
+  { date:'2026年6月', title:'毕业季', desc:'四年时光转瞬即逝，学士帽抛向天空的那一刻，我们都哭了。再见，我的复旦。', highlight:true, hasFriends:true, tags:['毕业','青春'], photo:campusPhotos.grad },
+];
+
+const alumniData = [
+  { name:'林小雨', uid:0, dept:'计算机科学 · 2022级', relation:'同班同学' },
+  { name:'张思远', uid:2, dept:'数据科学 · 2022级', relation:'室友' },
+  { name:'刘星辰', uid:3, dept:'人工智能 · 2022级', relation:'社团好友' },
+  { name:'赵天宇', uid:5, dept:'网络工程 · 2021级', relation:'学长' },
+  { name:'孙晓彤', uid:6, dept:'电子商务 · 2022级', relation:'同院' },
+];
+
+// 校友致未来的信
+const alumniLetters = [
+  { name:'林小雨', uid:0, year:'2022级 · 计算机科学', text:'三年后的自己，希望你已经成为了一名优秀的工程师，不忘初心，保持对技术的热爱。还记得图书馆五楼的夕阳吗？', openDate:'2029年6月30日', status:'未开启' },
+  { name:'张思远', uid:2, year:'2022级 · 数据科学', text:'未来的我，不管你身在何处，希望你依然保有那份对数据的敏锐和对生活的热情。记得常回复旦看看。', openDate:'2031年6月30日', status:'未开启' },
+  { name:'刘星辰', uid:3, year:'2022级 · 人工智能', text:'五年后的自己，AI一定已经改变了世界吧？希望你是那个推动改变的人之一。别忘了，梦想是从复旦开始的。', openDate:'2031年6月30日', status:'未开启' },
+  { name:'孙晓彤', uid:6, year:'2022级 · 电子商务', text:'十年后的自己一定已经实现了财务自由吧（笑）。不管怎样，希望那时的你回看这封信会微笑。', openDate:'2036年6月30日', status:'未开启' },
+];
+
+let currentSort = 'latest';
+
+// ===== 第一屏：3D 卡片墙 =====
+function initCards() {
+  const container = document.getElementById('cards3d');
+  const scene = document.getElementById('scene3d');
+  const w = scene.offsetWidth;
+  const h = scene.offsetHeight;
+
+  classmates.forEach((mate, i) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+
+    const depthLayer = i % 3;
+    if (depthLayer === 0) card.classList.add('depth-near');
+    else if (depthLayer === 1) card.classList.add('depth-mid');
+    else card.classList.add('depth-far');
+
+    const scale = depthLayer === 0 ? 1 : depthLayer === 1 ? 0.8 : 0.6;
+    const x = 10 + Math.random() * (w - 130);
+    const y = 40 + Math.random() * (h - 220);
+    const ry = -15 + Math.random() * 30;
+    const rx = -8 + Math.random() * 16;
+    const floatAnim = ['float1','float2','float3'][Math.floor(Math.random()*3)];
+    const dur = 4 + Math.random() * 4;
+    const delay = Math.random() * -8;
+
+    card.style.cssText = `
+      left:${x}px; top:${y}px;
+      --ry:${ry}deg; --rx:${rx}deg;
+      transform:rotateY(${ry}deg) rotateX(${rx}deg) scale(${scale});
+      animation:${floatAnim} ${dur}s ease-in-out ${delay}s infinite;
+    `;
+
+    const img = document.createElement('img');
+    img.src = studentPhotos[i % studentPhotos.length];
+    img.alt = mate.name;
+    img.loading = 'lazy';
+    card.appendChild(img);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'card-name';
+    nameEl.textContent = mate.name;
+    card.appendChild(nameEl);
+
+    container.appendChild(card);
+  });
+
+  for (let i = 0; i < 12; i++) {
+    const bokeh = document.createElement('div');
+    bokeh.className = 'bokeh';
+    const size = 4 + Math.random() * 20;
+    bokeh.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%; top:${Math.random()*100}%;
+      background:radial-gradient(circle, rgba(255,255,255,${0.03+Math.random()*0.06}), transparent);
+      animation:float${1+Math.floor(Math.random()*3)} ${6+Math.random()*6}s ease-in-out ${Math.random()*-10}s infinite;
+    `;
+    scene.appendChild(bokeh);
+  }
+
+  let tiltX = 0, tiltY = 0;
+  document.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    tiltX = (touch.clientX / w - 0.5) * 10;
+    tiltY = (touch.clientY / h - 0.5) * 10;
+    container.style.transform = `rotateY(${tiltX}deg) rotateX(${-tiltY}deg)`;
+  }, { passive: true });
+  document.addEventListener('mousemove', (e) => {
+    tiltX = (e.clientX / w - 0.5) * 10;
+    tiltY = (e.clientY / h - 0.5) * 10;
+    container.style.transform = `rotateY(${tiltX}deg) rotateX(${-tiltY}deg)`;
+  });
+}
+
+// ===== 第二屏：留言墙 =====
+function renderMessages(cat) {
+  const list = document.getElementById('msgList');
+  let filtered = cat === 'all' ? [...messages] : messages.filter(m => m.cat === cat);
+  if (currentSort === 'hot') {
+    filtered.sort((a, b) => b.likes - a.likes);
+  }
+
+  list.innerHTML = filtered.map((m, i) => {
+    const avatarSrc = avatarPhotos[m.uid % avatarPhotos.length];
+    const hasBg = m.hasPhoto;
+    const bgUrl = hasBg ? msgBgPhotos[m.bgIdx % msgBgPhotos.length] : '';
+    return `
+      <div class="msg-card ${hasBg ? '' : 'msg-card-plain'} fade-up" style="animation-delay:${i*0.05}s">
+        ${hasBg ? `<div class="msg-card-bg" style="background-image:url(${bgUrl})"></div>` : ''}
+        <div class="msg-card-content">
+          <div class="msg-card-header">
+            <div class="msg-avatar"><img src="${avatarSrc}" alt="${m.user}" loading="lazy"></div>
+            <div class="msg-user-info">
+              <span class="msg-username">${m.user}</span>
+              <span class="msg-time">${m.time}</span>
+            </div>
+          </div>
+          ${m.isVoice ? `
+            <div class="msg-voice">
+              <svg class="voice-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+              <div class="voice-wave"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <span class="voice-dur">${m.duration}</span>
+            </div>
+          ` : `<div class="msg-text">${m.text}</div>`}
+          <div class="msg-card-footer">
+            <span class="msg-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              ${m.likes}
+            </span>
+            <span class="msg-action">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              ${m.comments}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 排序切换
+function toggleSort() {
+  document.getElementById('sortDropdown').classList.toggle('show');
+  document.getElementById('sortToggle').classList.toggle('open');
+}
+function setSort(type, e) {
+  e.stopPropagation();
+  currentSort = type;
+  document.getElementById('sortLabel').textContent = type === 'latest' ? '最新' : '最热';
+  document.querySelectorAll('.sort-option').forEach(o => o.classList.remove('active'));
+  document.querySelector(`.sort-option[data-sort="${type}"]`).classList.add('active');
+  document.getElementById('sortDropdown').classList.remove('show');
+  document.getElementById('sortToggle').classList.remove('open');
+  const activeCat = document.querySelector('.msg-tab.active')?.dataset.cat || 'all';
+  renderMessages(activeCat);
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sort-toggle')) {
+    document.getElementById('sortDropdown')?.classList.remove('show');
+    document.getElementById('sortToggle')?.classList.remove('open');
+  }
+});
+
+// ===== 第三屏：时间轴 =====
+function renderTimeline() {
+  const wrap = document.getElementById('timelineWrap');
+  const html = timelineData.map((item, i) => {
+    return `
+      <div class="timeline-item ${item.highlight?'highlight':''} fade-up" style="animation-delay:${i*0.08}s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">${item.date}</div>
+        <div class="timeline-card">
+          <h4>${item.title}</h4>
+          <p>${item.desc}</p>
+          ${item.photo ? `<div class="tl-photo"><img src="${item.photo}" alt="${item.title}" loading="lazy"></div>` : ''}
+          ${item.tags ? `<div class="timeline-tags">${item.tags.map(t => `<span class="timeline-tag">${t}</span>`).join('')}</div>` : ''}
+          ${item.hasFriends ? `
+            <div class="timeline-friends">
+              ${[0,1,2].map(j => {
+                const idx = (i*2+j) % avatarPhotos.length;
+                return `<div class="tl-friend-av"><img src="${avatarPhotos[idx]}" alt="" loading="lazy"></div>`;
+              }).join('')}
+              <span>等3位好友共创</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+  wrap.innerHTML = '<div class="timeline-line"></div>' + html;
+}
+
+// ===== 校友关系图 =====
+function renderRelationGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const nodes = [
+    { x:cx, y:cy, r:18, name:'我', main:true },
+    ...alumniData.map((a, i) => ({
+      x: cx + Math.cos(i * Math.PI * 2 / alumniData.length) * 70,
+      y: cy + Math.sin(i * Math.PI * 2 / alumniData.length) * 60,
+      r: 12, name: a.name
+    }))
+  ];
+  nodes.forEach((n, i) => {
+    if (i === 0) return;
+    ctx.beginPath(); ctx.moveTo(nodes[0].x, nodes[0].y); ctx.lineTo(n.x, n.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+  });
+  nodes.forEach(n => {
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = n.main ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'; ctx.fill();
+    ctx.strokeStyle = n.main ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = n.main ? '#fff' : 'rgba(255,255,255,0.6)';
+    ctx.font = `${n.main ? '11' : '9'}px "Noto Sans SC", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(n.name, n.x, n.y);
+  });
+}
+
+function renderAlumniList() {
+  const list = document.getElementById('alumniList');
+  list.innerHTML = alumniData.map(a => `
+    <div class="alumni-item">
+      <div class="alumni-av"><img src="${avatarPhotos[a.uid % avatarPhotos.length]}" alt="${a.name}" loading="lazy"></div>
+      <div class="alumni-info"><div class="alumni-name">${a.name}</div><div class="alumni-dept">${a.dept}</div></div>
+      <div class="alumni-relation">${a.relation}</div>
+    </div>
+  `).join('');
+}
+
+// ===== 第四屏：个人中心 =====
+function renderProfile() {
+  const wrap = document.getElementById('profileWrap');
+  wrap.innerHTML = `
+    <div class="profile-header fade-up">
+      <div class="profile-avatar"><img src="${avatarPhotos[1]}" alt="" loading="lazy"></div>
+      <div class="profile-name">王子涵</div>
+      <div class="profile-dept">软件工程 · 2022级1班</div>
+      <div class="profile-bio">热爱代码与摄影，相信技术可以改变世界。在校期间参与多个开源项目，希望用技术连接更多可能。</div>
+    </div>
+
+    <div class="profile-actions fade-up stagger-1">
+      <button class="profile-btn primary" onclick="alert('编辑个人资料')">编辑资料</button>
+      <button class="profile-btn secondary" onclick="alert('查看联系方式')">联系方式</button>
+    </div>
+
+    <div class="section-title fade-up stagger-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      大学关键词
+    </div>
+    <div class="tags-wrap fade-up stagger-2">
+      <span class="tag-item highlight">图书馆常客</span>
+      <span class="tag-item highlight">社团达人</span>
+      <span class="tag-item">早八之魂</span>
+      <span class="tag-item">代码侠</span>
+      <span class="tag-item">摄影爱好者</span>
+      <span class="tag-item">食堂美食家</span>
+      <span class="tag-item highlight">奖学金选手</span>
+      <span class="tag-item">夜跑达人</span>
+    </div>
+
+    <div class="section-title fade-up stagger-3">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      荣誉墙
+    </div>
+    <div class="honor-list fade-up stagger-3">
+      <div class="honor-item">
+        <div class="honor-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div>
+        <div class="honor-info"><div class="honor-title">国家奖学金</div><div class="honor-sub">2024年度 · 教育部</div></div>
+      </div>
+      <div class="honor-item">
+        <div class="honor-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="honor-info"><div class="honor-title">全国程序设计大赛一等奖</div><div class="honor-sub">2024年 · ICPC亚洲区</div></div>
+      </div>
+      <div class="honor-item">
+        <div class="honor-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="honor-info"><div class="honor-title">优秀毕业设计</div><div class="honor-sub">2026年 · 校级</div></div>
+      </div>
+    </div>
+
+    <div class="section-title fade-up stagger-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      技能树
+    </div>
+    <div class="skill-list fade-up stagger-4">
+      <div class="skill-item"><span class="skill-name">前端开发</span><div class="skill-bar-wrap"><div class="skill-bar" style="width:88%"></div></div></div>
+      <div class="skill-item"><span class="skill-name">后端开发</span><div class="skill-bar-wrap"><div class="skill-bar" style="width:75%"></div></div></div>
+      <div class="skill-item"><span class="skill-name">算法</span><div class="skill-bar-wrap"><div class="skill-bar" style="width:82%"></div></div></div>
+      <div class="skill-item"><span class="skill-name">摄影</span><div class="skill-bar-wrap"><div class="skill-bar" style="width:65%"></div></div></div>
+      <div class="skill-item"><span class="skill-name">项目管理</span><div class="skill-bar-wrap"><div class="skill-bar" style="width:60%"></div></div></div>
+    </div>
+
+    <div class="section-title fade-up stagger-5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      时光信箱
+    </div>
+    <div class="mailbox-card fade-up stagger-5">
+      <div class="mailbox-header">
+        <h4>致未来的一封信</h4>
+        <span class="mailbox-status">已写2封</span>
+      </div>
+      <div class="mailbox-info">写下对未来自己的寄语，设定开启时间。系统会在相应时间通过微信或邮件提醒你开启。</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div style="flex:1;padding:10px;background:var(--glass2);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-sec);">第一封</div>
+          <div style="font-size:12px;margin-top:2px;">毕业3年后开启</div>
+          <div style="font-size:10px;color:var(--text-sec);margin-top:2px;">2029年6月30日</div>
+        </div>
+        <div style="flex:1;padding:10px;background:var(--glass2);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-sec);">第二封</div>
+          <div style="font-size:12px;margin-top:2px;">毕业10年后开启</div>
+          <div style="font-size:10px;color:var(--text-sec);margin-top:2px;">2036年6月30日</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        校友致未来的信
+      </div>
+      <div class="alumni-letters">
+        ${alumniLetters.map(l => `
+          <div class="alumni-letter">
+            <div class="alumni-letter-header">
+              <div class="alumni-letter-av"><img src="${avatarPhotos[l.uid % avatarPhotos.length]}" alt="${l.name}" loading="lazy"></div>
+              <span class="alumni-letter-name">${l.name}</span>
+              <span class="alumni-letter-year">${l.year}</span>
+            </div>
+            <div class="alumni-letter-text">${l.text}</div>
+            <div class="alumni-letter-open">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              ${l.openDate} · ${l.status}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <button class="mailbox-btn" onclick="alert('撰写新的时光信')">撰写新的时光信</button>
+    </div>
+
+    <div class="section-title fade-up stagger-5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      校园轨迹
+    </div>
+    <div class="track-grid fade-up stagger-5">
+      <div class="track-card">
+        <div class="track-value">1,247</div>
+        <div class="track-label">图书馆总时长（小时）</div>
+      </div>
+      <div class="track-card">
+        <div class="track-value">北区</div>
+        <div class="track-label">最常去的食堂</div>
+      </div>
+      <div class="track-card">
+        <div class="track-value">326</div>
+        <div class="track-label">教学楼签到（天）</div>
+      </div>
+      <div class="track-card">
+        <div class="track-value">89</div>
+        <div class="track-label">操场打卡（次）</div>
+      </div>
+      <div class="track-card wide">
+        <div style="font-size:12px;color:var(--text-sec);margin-bottom:8px;">你的大学生活轨迹</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:40px;justify-content:center;">
+          ${Array.from({length:24}, (_, i) => {
+            const h = 8 + Math.random() * 32;
+            return `<div style="width:8px;height:${h}px;background:rgba(255,255,255,${0.1+Math.random()*0.3});border-radius:2px;"></div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:9px;color:var(--text-sec);">大一上</span>
+          <span style="font-size:9px;color:var(--text-sec);">大二上</span>
+          <span style="font-size:9px;color:var(--text-sec);">大三上</span>
+          <span style="font-size:9px;color:var(--text-sec);">大四上</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 面板切换 =====
+function toggleBadgePanel() {
+  document.getElementById('badgePanel').classList.toggle('show');
+  document.getElementById('badgeOverlay').classList.toggle('show');
+}
+function toggleAlumniPanel() {
+  const show = document.getElementById('alumniPanel').classList.toggle('show');
+  document.getElementById('alumniOverlay').classList.toggle('show');
+  if (show) { setTimeout(renderRelationGraph, 100); renderAlumniList(); }
+}
+function toggleSettingsPanel() {
+  document.getElementById('settingsPanel').classList.toggle('show');
+  document.getElementById('settingsOverlay').classList.toggle('show');
+}
+
+// ===== 标签页切换 =====
+document.querySelectorAll('.tab-item').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(tab.dataset.screen).classList.add('active');
+    const fabBtn = document.querySelector('.fab-write');
+    fabBtn.classList.toggle('show', tab.dataset.screen === 'screen-msg');
+  });
+});
+
+document.querySelectorAll('.msg-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.msg-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderMessages(tab.dataset.cat);
+  });
+});
+
+// ===== 初始化 =====
+function init() {
+  initCards();
+  renderMessages('all');
+  renderTimeline();
+  renderProfile();
+}
+document.addEventListener('DOMContentLoaded', init);
+window.addEventListener('resize', () => {
+  document.getElementById('cards3d').innerHTML = '';
+  initCards();
+});
+</script>
+</body>
+</html>
