@@ -631,12 +631,17 @@ html, body {
         <!-- 复旦校徽 -->
         <div class="badge-btn" onclick="toggleBadgePanel()">
           <div class="fudan-badge">
-            <svg viewBox="0 0 100 100" width="36" height="36">
-              <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-              <text x="50" y="40" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="18" font-weight="700" font-family="STKaiti,KaiTi,serif">复旦</text>
-              <text x="50" y="58" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="10" font-weight="400" font-family="STKaiti,KaiTi,serif">大学</text>
-              <text x="50" y="73" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7" font-family="sans-serif" letter-spacing="1">FUDAN</text>
+            <svg viewBox="0 0 200 200" width="36" height="36">
+              <circle cx="100" cy="100" r="96" fill="#1a1a2e" stroke="rgba(255,255,255,0.6)" stroke-width="3"/>
+              <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+              <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+              <text x="100" y="72" text-anchor="middle" fill="#fff" font-size="38" font-weight="900" font-family="STFangsong,FangSong,STKaiti,KaiTi,serif" letter-spacing="6">復旦</text>
+              <line x1="55" y1="82" x2="145" y2="82" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+              <text x="100" y="102" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="14" font-family="STKaiti,KaiTi,serif" letter-spacing="2">博学而笃志</text>
+              <text x="100" y="120" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="14" font-family="STKaiti,KaiTi,serif" letter-spacing="2">切问而近思</text>
+              <text x="100" y="145" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="13" font-family="Georgia,serif" letter-spacing="3">FUDAN</text>
+              <text x="100" y="160" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="11" font-family="Georgia,serif" letter-spacing="2">UNIVERSITY</text>
+              <text x="100" y="178" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="12" font-family="sans-serif">— 1905 —</text>
             </svg>
           </div>
         </div>
@@ -752,12 +757,16 @@ html, body {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-      <svg viewBox="0 0 100 100" width="40" height="40">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
-        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-        <text x="50" y="40" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-size="18" font-weight="700" font-family="STKaiti,KaiTi,serif">复旦</text>
-        <text x="50" y="58" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="10" font-family="STKaiti,KaiTi,serif">大学</text>
-        <text x="50" y="73" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="7" font-family="sans-serif" letter-spacing="1">FUDAN</text>
+      <svg viewBox="0 0 200 200" width="44" height="44">
+        <circle cx="100" cy="100" r="96" fill="#1a1a2e" stroke="rgba(255,255,255,0.5)" stroke-width="3"/>
+        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        <text x="100" y="72" text-anchor="middle" fill="#fff" font-size="38" font-weight="900" font-family="STFangsong,FangSong,STKaiti,KaiTi,serif" letter-spacing="6">復旦</text>
+        <line x1="55" y1="82" x2="145" y2="82" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+        <text x="100" y="102" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="14" font-family="STKaiti,KaiTi,serif" letter-spacing="2">博学而笃志</text>
+        <text x="100" y="120" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="14" font-family="STKaiti,KaiTi,serif" letter-spacing="2">切问而近思</text>
+        <text x="100" y="145" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="13" font-family="Georgia,serif" letter-spacing="3">FUDAN</text>
+        <text x="100" y="160" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="11" font-family="Georgia,serif" letter-spacing="2">UNIVERSITY</text>
+        <text x="100" y="178" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="12" font-family="sans-serif">— 1905 —</text>
       </svg>
       <div>
         <h3 style="font-size:18px;font-weight:700;">复旦大学</h3>
@@ -824,47 +833,47 @@ html, body {
 </div>
 
 <script>
-// ===== 真实学生证件照 (来自 randomuser.me 风格的 pravatar) =====
+// ===== 中国青年真实照片 =====
 const studentPhotos = [
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=260&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1557862921-37829c790f19?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1643990081716-345352952d33?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1700089609378-b1371e2d00e9?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1605504836193-e77d3d9ede8a?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1611570756249-1c551c038751?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1680104072294-e9e15e26c5cc?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1695800998493-ccff5ea292ea?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1564521107069-ce2aa813939d?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1686543972602-da0c7ea61ce2?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1661635577898-4bd9049fe8f8?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1650075990015-af095f1659e3?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1643990081713-6d747510bf2b?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1595824324628-026d6ad96bff?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1580602264206-ca4e9a74248d?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1568768988249-c595a661638a?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1684791322943-b77934ff9c74?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1612765598697-3a7b4d5ac006?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1622319107576-cca7c8a906f7?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1643990083137-34669413e267?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1667731937937-f4d175848aef?w=200&h=260&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1566139884873-c47ee2dfc3c5?w=200&h=260&fit=crop&crop=face',
 ];
 
 // 头像缩略图
 const avatarPhotos = [
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=80&h=80&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1643990081716-345352952d33?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1700089609378-b1371e2d00e9?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1605504836193-e77d3d9ede8a?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1611570756249-1c551c038751?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1680104072294-e9e15e26c5cc?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1695800998493-ccff5ea292ea?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1564521107069-ce2aa813939d?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1686543972602-da0c7ea61ce2?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1661635577898-4bd9049fe8f8?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1650075990015-af095f1659e3?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1643990081713-6d747510bf2b?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1595824324628-026d6ad96bff?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1580602264206-ca4e9a74248d?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1568768988249-c595a661638a?w=80&h=80&fit=crop&crop=face',
+  'https://images.unsplash.com/photo-1684791322943-b77934ff9c74?w=80&h=80&fit=crop&crop=face',
 ];
 
 // 真实大学校园场景图
